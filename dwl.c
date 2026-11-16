@@ -279,6 +279,10 @@ typedef struct {
 	uint32_t tags;
 	int isfloating;
 	int monitor;
+	/* floating geometry; w = 0 leaves the client's size and position as they
+	 * are; a negative x or y counts from the right or bottom edge of the
+	 * monitor's window area, as in X geometry (320x180-20-20) */
+	int x, y, w, h;
 } Rule;
 
 typedef struct {
@@ -378,6 +382,7 @@ static void requestdecorationmode(struct wl_listener *listener, void *data);
 static void requeststartdrag(struct wl_listener *listener, void *data);
 static void requestmonstate(struct wl_listener *listener, void *data);
 static void resize(Client *c, struct wlr_box geo, int interact);
+static struct wlr_box rulebox(const Rule *r, struct wlr_box area);
 static void run(char *startup_cmd);
 static void setcursor(struct wl_listener *listener, void *data);
 static void setcursorshape(struct wl_listener *listener, void *data);
@@ -581,7 +586,7 @@ applyrules(Client *c)
 	const char *appid, *title;
 	uint32_t newtags = 0;
 	int i;
-	const Rule *r;
+	const Rule *r, *geom = NULL;
 	Monitor *mon = selmon, *m;
 
 	appid = client_get_appid(c);
@@ -597,6 +602,8 @@ applyrules(Client *c)
 				&& (!r->id || strstr(appid, r->id))) {
 			c->isfloating = r->isfloating;
 			newtags |= r->tags;
+			if (r->w)
+				geom = r;
 			i = 0;
 			wl_list_for_each(m, &mons, link) {
 				if (r->monitor == i++)
@@ -607,6 +614,8 @@ applyrules(Client *c)
 
 	c->isfloating |= client_is_float_type(c);
 	setmon(c, mon, newtags);
+	if (geom && c->isfloating && c->mon)
+		resize(c, rulebox(geom, c->mon->w), 0);
 }
 
 void
@@ -2589,6 +2598,17 @@ requestmonstate(struct wl_listener *listener, void *data)
 	struct wlr_output_event_request_state *event = data;
 	wlr_output_commit_state(event->output, event->state);
 	updatemons(NULL, NULL);
+}
+
+struct wlr_box
+rulebox(const Rule *r, struct wlr_box area)
+{
+	return (struct wlr_box){
+		.x = area.x + (r->x < 0 ? area.width - r->w + r->x : r->x),
+		.y = area.y + (r->y < 0 ? area.height - r->h + r->y : r->y),
+		.width = r->w,
+		.height = r->h,
+	};
 }
 
 void
