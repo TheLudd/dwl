@@ -3800,3 +3800,5 @@ main(int argc, char *argv[])
 usage:
 	die("Usage: %s [-v] [-d] [-s startup command]", argv[0]);
 }
+
+#include "animfullscreen.c"
