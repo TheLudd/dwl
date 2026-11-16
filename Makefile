@@ -20,7 +20,7 @@ TRAYOBJS = systray/watcher.o systray/tray.o systray/item.o systray/icon.o systra
 TRAYDEPS = systray/watcher.h systray/tray.h systray/item.h systray/icon.h systray/menu.h systray/helpers.h
 
 all: dwl
-dwl: dwl.c client.h dbus.h config.h animfullscreen.c focuspid.c grid.c ime.h util.h config.mk cursor-shape-v1-protocol.h \
+dwl: dwl.c client.h dbus.h config.h user-colors.h usercolors.c animfullscreen.c focuspid.c grid.c ime.h util.h config.mk cursor-shape-v1-protocol.h \
 	ext-image-copy-capture-v1-protocol.h \
 	pointer-constraints-unstable-v1-protocol.h wlr-layer-shell-unstable-v1-protocol.h \
 	wlr-foreign-toplevel-management-unstable-v1-protocol.h wlr-output-power-management-unstable-v1-protocol.h xdg-shell-protocol.h \
@@ -64,8 +64,13 @@ wlr-foreign-toplevel-management-unstable-v1-protocol.h:
 
 config.h:
 	cp config.def.h $@
+
+# the machine's USERCOLORS, or the empty table; rewritten only when it differs
+user-colors.h: FORCE
+	@src=$(USERCOLORS); [ -e $$src ] || src=user-colors.def.h; cmp -s $$src $@ || cp $$src $@
+FORCE:
 clean:
-	rm -f dwl *.o *-protocol.h systray/*.o
+	rm -f dwl *.o *-protocol.h systray/*.o user-colors.h
 
 dist: clean
 	mkdir -p dwl-$(VERSION)

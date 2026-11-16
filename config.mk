@@ -8,6 +8,10 @@ PREFIX = $(HOME)/.local
 MANDIR = $(PREFIX)/share/man
 DATADIR = $(PREFIX)/share
 
+# per-user SchemeSel colors of this machine, shared with dwm (`sudo make
+# user-colors` in ~/code/dwm writes one); compiled in when the file exists
+USERCOLORS = /etc/dwm/user-colors.h
+
 WLR_INCS = `$(PKG_CONFIG) --cflags wlroots-0.20`
 WLR_LIBS = `$(PKG_CONFIG) --libs wlroots-0.20`
 

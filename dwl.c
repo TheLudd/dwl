@@ -6,6 +6,7 @@
 #include <getopt.h>
 #include <libinput.h>
 #include <limits.h>
+#include <pwd.h>
 #include <linux/input-event-codes.h>
 #include <math.h>
 #include <libdrm/drm_fourcc.h>
@@ -291,6 +292,11 @@ typedef struct {
 } Rule;
 
 typedef struct {
+	const char *user;
+	const char **colors; /* SchemeSel fg, bg, border as "#rrggbb" */
+} UserColors;
+
+typedef struct {
 	struct wlr_scene_tree *scene;
 
 	struct wlr_session_lock_v1 *lock;
@@ -354,6 +360,7 @@ static void drawbar(Monitor *m);
 static void drawbars(void);
 static void focusclient(Client *c, int lift);
 static void writefocuspid(Client *c);
+static void setusercolors(void);
 static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static Client *focustop(Monitor *m);
@@ -2929,6 +2936,7 @@ setup(void)
 	for (i = 0; i < (int)LENGTH(sig); i++)
 		sigaction(sig[i], &sa, NULL);
 
+	setusercolors();
 
 	wlr_log_init(log_level, NULL);
 
@@ -3904,3 +3912,4 @@ usage:
 
 #include "animfullscreen.c"
 #include "focuspid.c"
+#include "usercolors.c"

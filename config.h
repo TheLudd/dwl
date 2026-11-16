@@ -24,6 +24,8 @@ static uint32_t colors[][3]                = {
 	[SchemeSel]  = { 0xeeeeeeff, 0x005577ff, 0x005577ff },
 	[SchemeUrg]  = { 0,          0,          0x770000ff },
 };
+/* SchemeSel per user: a copy of the machine's USERCOLORS file (see config.mk) */
+#include "user-colors.h"
 
 /* tagging */
 static char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
