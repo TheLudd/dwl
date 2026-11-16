@@ -363,6 +363,7 @@ static void setupuserhost(void);
 static void focusclient(Client *c, int lift);
 static void writefocuspid(Client *c);
 static void setusercolors(void);
+static int prefixkey(uint32_t mods, const xkb_keysym_t syms[2]);
 static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static Client *focustop(Monitor *m);
@@ -2147,6 +2148,13 @@ keypress(struct wl_listener *listener, void *data)
 
 	/* On _press_ if there is no active screen locker,
 	 * attempt to process a compositor keybinding. */
+	if (!locked && event->state == WL_KEYBOARD_KEY_STATE_PRESSED
+			&& prefixkey(group->mods, group->keysyms)) {
+		consumed[event->keycode] = 1;
+		wl_event_source_timer_update(group->key_repeat_source, 0);
+		return;
+	}
+
 	if (!locked && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		for (int i = 0; i < 2; i++) {
 			const Key *key = keybinding(group->mods, group->keysyms[i]);
@@ -3957,3 +3965,4 @@ usage:
 #include "animfullscreen.c"
 #include "focuspid.c"
 #include "usercolors.c"
+#include "prefix.c"
