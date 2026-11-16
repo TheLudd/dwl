@@ -3232,6 +3232,8 @@ tag(const Arg *arg)
 	focusclient(focustop(selmon), 1);
 	arrange(selmon);
 	drawbars();
+	if (viewontag && (arg->ui & TAGMASK) != TAGMASK)
+		view(arg);
 }
 
 void

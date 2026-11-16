@@ -7,7 +7,8 @@
 static const int sloppyfocus               = 1;  /* focus follows mouse */
 static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
 static const unsigned int borderpx         = 2;
-static const unsigned int gappx            = 3;  /* gap between tiled windows */  /* border pixel of windows */
+static const unsigned int gappx            = 3;  /* gap between tiled windows */
+static const int viewontag                 = 1;  /* tagging a window also views that tag */  /* border pixel of windows */
 static const unsigned int snap             = 32; /* snap pixel */
 static const unsigned int systrayspacing   = 4; /* systray spacing */
 static const int showsystray               = 1; /* 0 means no systray */
@@ -42,11 +43,13 @@ static const Rule rules[] = {
 };
 
 /* layout(s) */
+#include "grid.c"
 static const Layout layouts[] = {
 	/* symbol     arrange function */
 	{ "[]=",      tile },
 	{ "><>",      NULL },    /* no layout function means floating behavior */
 	{ "[M]",      monocle },
+	{ "HHH",      grid },
 };
 
 /* monitors */
@@ -172,6 +175,7 @@ static const Key keys[] = {
 	{ MODKEY,                    XKB_KEY_t,           setlayout,        {.v = &layouts[0]} },
 	{ MODKEY,                    XKB_KEY_f,           setlayout,        {.v = &layouts[1]} },
 	{ MODKEY,                    XKB_KEY_m,           setlayout,        {.v = &layouts[2]} },
+	{ MODKEY,                    XKB_KEY_g,           setlayout,        {.v = &layouts[3]} },
 	{ MODKEY,                    XKB_KEY_space,       setlayout,        {0} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_space,       togglefloating,   {0} },
 	{ MODKEY,                    XKB_KEY_e,           togglefullscreen, {0} },
