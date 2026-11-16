@@ -8,6 +8,8 @@ static const int sloppyfocus               = 1;  /* focus follows mouse */
 static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
 static const unsigned int borderpx         = 2;  /* border pixel of windows */
 static const unsigned int snap             = 32; /* snap pixel */
+static const unsigned int systrayspacing   = 4; /* systray spacing */
+static const int showsystray               = 1; /* 0 means no systray */
 static const int showbar                   = 1; /* 0 means no bar */
 static const int topbar                    = 1; /* 0 means bottom bar */
 static const char *fonts[]                 = {"Liberation Mono:pixelsize=14", "Noto Color Emoji:pixelsize=12"};
@@ -129,6 +131,7 @@ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TA
 /* commands */
 static const char *termcmd[]         = { "foot", "--title", "truetm", "truetm", NULL };
 static const char *menucmd[]         = { "wmenu-run", "-l", "10", NULL };
+static const char *dmenucmd[]        = { "wmenu", NULL }; /* tray icon menus */
 static const char *chromecmd[]       = { "google-chrome-stable", NULL };
 static const char *slackcmd[]        = { "slack", NULL };
 static const char *lockcmd[]         = { "lock", NULL };
@@ -214,6 +217,8 @@ static const Button buttons[] = {
 	{ ClkTagBar,   0,      BTN_RIGHT,  toggleview,     {0} },
 	{ ClkTagBar,   MODKEY, BTN_LEFT,   tag,            {0} },
 	{ ClkTagBar,   MODKEY, BTN_RIGHT,  toggletag,      {0} },
+	{ ClkTray,     0,      BTN_LEFT,   trayactivate,   {0} },
+	{ ClkTray,     0,      BTN_RIGHT,  traymenu,       {0} },
 };
 
 static const Axis axes[] = {

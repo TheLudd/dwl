@@ -12,16 +12,27 @@ DWLDEVCFLAGS = -g -Wpedantic -Wall -Wextra -Wdeclaration-after-statement \
 	-Wfloat-conversion
 
 # CFLAGS / LDFLAGS
-PKGS      = wayland-server xkbcommon libinput pixman-1 fcft $(XLIBS)
+PKGS      = wayland-server xkbcommon libinput pixman-1 fcft $(XLIBS) dbus-1
 DWLCFLAGS = `$(PKG_CONFIG) --cflags $(PKGS)` $(WLR_INCS) $(DWLCPPFLAGS) $(DWLDEVCFLAGS) $(CFLAGS)
 LDLIBS    = `$(PKG_CONFIG) --libs $(PKGS)` $(WLR_LIBS) -lm $(LIBS)
 
+TRAYOBJS = systray/watcher.o systray/tray.o systray/item.o systray/icon.o systray/menu.o systray/helpers.o
+TRAYDEPS = systray/watcher.h systray/tray.h systray/item.h systray/icon.h systray/menu.h systray/helpers.h
+
 all: dwl
-dwl: dwl.c client.h config.h animfullscreen.c focuspid.c ime.h util.h config.mk cursor-shape-v1-protocol.h \
+dwl: dwl.c client.h dbus.h config.h animfullscreen.c focuspid.c ime.h util.h config.mk cursor-shape-v1-protocol.h \
 	ext-image-copy-capture-v1-protocol.h \
 	pointer-constraints-unstable-v1-protocol.h wlr-layer-shell-unstable-v1-protocol.h \
-	wlr-foreign-toplevel-management-unstable-v1-protocol.h wlr-output-power-management-unstable-v1-protocol.h xdg-shell-protocol.h
-	$(CC) dwl.c $(DWLCFLAGS) $(LDFLAGS) $(LDLIBS) -o $@
+	wlr-foreign-toplevel-management-unstable-v1-protocol.h wlr-output-power-management-unstable-v1-protocol.h xdg-shell-protocol.h \
+	dbus.o $(TRAYOBJS) $(TRAYDEPS)
+	$(CC) dwl.c dbus.o $(TRAYOBJS) $(DWLCFLAGS) $(LDFLAGS) $(LDLIBS) -o $@
+dbus.o: dbus.c dbus.h util.h
+systray/watcher.o: systray/watcher.c $(TRAYDEPS)
+systray/tray.o: systray/tray.c $(TRAYDEPS)
+systray/item.o: systray/item.c $(TRAYDEPS)
+systray/icon.o: systray/icon.c $(TRAYDEPS)
+systray/menu.o: systray/menu.c $(TRAYDEPS)
+systray/helpers.o: systray/helpers.c $(TRAYDEPS)
 
 # wayland-scanner is a tool which generates C headers and rigging for Wayland
 # protocols, which are specified in XML. wlroots requires you to rig these up
@@ -54,7 +65,7 @@ wlr-foreign-toplevel-management-unstable-v1-protocol.h:
 config.h:
 	cp config.def.h $@
 clean:
-	rm -f dwl *.o *-protocol.h
+	rm -f dwl *.o *-protocol.h systray/*.o
 
 dist: clean
 	mkdir -p dwl-$(VERSION)
@@ -78,3 +89,7 @@ install: dwl
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/dwl $(DESTDIR)$(MANDIR)/man1/dwl.1 \
 		$(DESTDIR)$(DATADIR)/wayland-sessions/dwl.desktop
+
+.SUFFIXES: .c .o
+.c.o:
+	$(CC) $(CPPFLAGS) $(DWLCFLAGS) -o $@ -c $<
