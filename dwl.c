@@ -348,6 +348,7 @@ static Monitor *dirtomon(enum wlr_direction dir);
 static void drawbar(Monitor *m);
 static void drawbars(void);
 static void focusclient(Client *c, int lift);
+static void writefocuspid(Client *c);
 static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static Client *focustop(Monitor *m);
@@ -1835,6 +1836,7 @@ focusclient(Client *c, int lift)
 			wlr_foreign_toplevel_handle_v1_set_activated(old_c->foreign_toplevel, 0);
 	}
 	drawbars();
+	writefocuspid(c);
 
 	if (!c) {
 		/* With no client, all we have left is to clear focus */
@@ -3802,3 +3804,4 @@ usage:
 }
 
 #include "animfullscreen.c"
+#include "focuspid.c"
