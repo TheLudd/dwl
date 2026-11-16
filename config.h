@@ -6,7 +6,8 @@
 /* appearance */
 static const int sloppyfocus               = 1;  /* focus follows mouse */
 static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
-static const unsigned int borderpx         = 2;  /* border pixel of windows */
+static const unsigned int borderpx         = 2;
+static const unsigned int gappx            = 3;  /* gap between tiled windows */  /* border pixel of windows */
 static const unsigned int snap             = 32; /* snap pixel */
 static const unsigned int systrayspacing   = 4; /* systray spacing */
 static const int showsystray               = 1; /* 0 means no systray */

@@ -3255,22 +3255,26 @@ tile(Monitor *m)
 	if (n == 0)
 		return;
 
+	/* gappx between the windows and around them */
 	if (n > m->nmaster)
 		mw = m->nmaster ? (int)roundf(m->w.width * m->mfact) : 0;
 	else
-		mw = m->w.width;
-	i = my = ty = 0;
+		mw = m->w.width - gappx;
+	i = 0;
+	my = ty = gappx;
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || c->isfloating || c->isfullscreen)
 			continue;
 		if (i < m->nmaster) {
-			resize(c, (struct wlr_box){.x = m->w.x, .y = m->w.y + my, .width = mw,
-				.height = (m->w.height - my) / (MIN(n, m->nmaster) - i)}, 0);
-			my += c->geom.height;
+			resize(c, (struct wlr_box){.x = m->w.x + gappx, .y = m->w.y + my,
+				.width = mw - gappx,
+				.height = (m->w.height - my) / (MIN(n, m->nmaster) - i) - gappx}, 0);
+			my += c->geom.height + gappx;
 		} else {
-			resize(c, (struct wlr_box){.x = m->w.x + mw, .y = m->w.y + ty,
-				.width = m->w.width - mw, .height = (m->w.height - ty) / (n - i)}, 0);
-			ty += c->geom.height;
+			resize(c, (struct wlr_box){.x = m->w.x + mw + gappx, .y = m->w.y + ty,
+				.width = m->w.width - mw - 2 * gappx,
+				.height = (m->w.height - ty) / (n - i) - gappx}, 0);
+			ty += c->geom.height + gappx;
 		}
 		i++;
 	}
