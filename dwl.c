@@ -359,6 +359,7 @@ static void destroykeyboardgroup(struct wl_listener *listener, void *data);
 static Monitor *dirtomon(enum wlr_direction dir);
 static void drawbar(Monitor *m);
 static void drawbars(void);
+static uint32_t bartags(Monitor *m);
 static void setupuserhost(void);
 static void focusclient(Client *c, int lift);
 static void writefocuspid(Client *c);
@@ -864,6 +865,7 @@ void
 buttonpress(struct wl_listener *listener, void *data)
 {
 	unsigned int i = 0, x = 0, ti = 0;
+	uint32_t shown;
 	double cx, tx = 0;
 	unsigned int click;
 	struct wlr_pointer_button_event *event = data;
@@ -897,9 +899,14 @@ buttonpress(struct wl_listener *listener, void *data)
 			cx = (cursor->x - selmon->m.x) * selmon->wlr_output->scale;
 			traywidth = tray_get_width(selmon->tray);
 
-			do
+			shown = bartags(selmon);
+			for (; i < LENGTH(tags); i++) {
+				if (!(shown & 1 << i))
+					continue;
 				x += TEXTW(selmon, tags[i]);
-			while (cx >= x && ++i < LENGTH(tags));
+				if (cx < x)
+					break;
+			}
 			if (i < LENGTH(tags)) {
 				click = ClkTagBar;
 				arg.ui = 1 << i;
@@ -1753,6 +1760,20 @@ dirtomon(enum wlr_direction dir)
 	return selmon;
 }
 
+/* The tags drawn in m's bar: the viewed ones and those with windows, like the
+ * dwm fork, which leaves vacant tags out. */
+uint32_t
+bartags(Monitor *m)
+{
+	uint32_t shown = m->tagset[m->seltags];
+	Client *c;
+
+	wl_list_for_each(c, &clients, link)
+		if (c->mon == m && c->tags != TAGMASK)
+			shown |= c->tags;
+	return shown & TAGMASK;
+}
+
 void
 setupuserhost(void)
 {
@@ -1772,7 +1793,7 @@ drawbar(Monitor *m)
 	int x, w, tw = 0, cw, cx, uw;
 	int boxs = m->drw->font->height / 9;
 	int boxw = m->drw->font->height / 6 + 2;
-	uint32_t i, occ = 0, urg = 0;
+	uint32_t i, shown = bartags(m), urg = 0;
 	Client *c;
 	Buffer *buf;
 
@@ -1793,20 +1814,17 @@ drawbar(Monitor *m)
 	wl_list_for_each(c, &clients, link) {
 		if (c->mon != m)
 			continue;
-		occ |= c->tags;
 		if (c->isurgent)
 			urg |= c->tags;
 	}
 	x = 0;
 	c = focustop(m);
 	for (i = 0; i < LENGTH(tags); i++) {
+		if (!(shown & 1 << i))
+			continue;
 		w = TEXTW(m, tags[i]);
 		drwl_setscheme(m->drw, colors[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
 		drwl_text(m->drw, x, 0, w, m->b.height, m->lrpad / 2, tags[i], urg & 1 << i);
-		if (occ & 1 << i)
-			drwl_rect(m->drw, x + boxs, boxs, boxw, boxw,
-				m == selmon && c && c->tags & 1 << i,
-				urg & 1 << i);
 		x += w;
 	}
 	w = TEXTW(m, m->ltsymbol);
