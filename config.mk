@@ -4,7 +4,7 @@ VERSION  = `git describe --tags --dirty 2>/dev/null || echo $(_VERSION)`
 PKG_CONFIG = pkg-config
 
 # paths
-PREFIX = /usr/local
+PREFIX = $(HOME)/.local
 MANDIR = $(PREFIX)/share/man
 DATADIR = $(PREFIX)/share
 
@@ -24,8 +24,8 @@ WLR_LIBS = `$(PKG_CONFIG) --libs wlroots-0.20`
 #	-I$(PWD)/wlroots/0.20/include/wlroots-0.20
 #WLR_LIBS = -Wl,-rpath,$(PWD)/wlroots/0.20/lib64 -L$(PWD)/wlroots/0.20/lib64 -lwlroots-0.20
 
-XWAYLAND =
-XLIBS =
+XWAYLAND = -DXWAYLAND
+XLIBS = xcb xcb-icccm
 # Uncomment to build XWayland support
 #XWAYLAND = -DXWAYLAND
 #XLIBS = xcb xcb-icccm
