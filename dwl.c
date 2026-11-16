@@ -94,6 +94,7 @@
 #define TAGMASK                 ((1u << LENGTH(tags)) - 1)
 #define LISTEN(E, L, H)         wl_signal_add((E), ((L)->notify = (H), (L)))
 #define LISTEN_STATIC(E, H)     do { struct wl_listener *_l = ecalloc(1, sizeof(*_l)); _l->notify = (H); wl_signal_add((E), _l); } while (0)
+#define CENTERSEP               '\x1f' /* status text before this byte goes in the middle */
 #define TEXTW(mon, text)        (drwl_font_getwidth(mon->drw, text) + mon->lrpad)
 
 /* enums */
@@ -358,6 +359,7 @@ static void destroykeyboardgroup(struct wl_listener *listener, void *data);
 static Monitor *dirtomon(enum wlr_direction dir);
 static void drawbar(Monitor *m);
 static void drawbars(void);
+static void setupuserhost(void);
 static void focusclient(Client *c, int lift);
 static void writefocuspid(Client *c);
 static void setusercolors(void);
@@ -502,7 +504,10 @@ static struct wl_list mons;
 static Monitor *selmon;
 static int consumed[KEY_MAX + 1];
 
-static char stext[256];
+static char stext[256];       /* status text drawn at the right */
+static char ctext[256];       /* status text drawn in the middle */
+static char userhost[HOST_NAME_MAX + 64];       /* drawn when no window is focused */
+static char userhosttitle[HOST_NAME_MAX + 128]; /* drawn before the window title */
 static struct wl_event_source *status_event_source;
 
 static DBusConnection *bus_conn;
@@ -1748,10 +1753,22 @@ dirtomon(enum wlr_direction dir)
 }
 
 void
+setupuserhost(void)
+{
+	char host[HOST_NAME_MAX + 1] = "?";
+	const struct passwd *pw = getpwuid(getuid());
+
+	gethostname(host, sizeof(host));
+	host[HOST_NAME_MAX] = '\0';
+	snprintf(userhost, sizeof(userhost), "%s@%s", pw ? pw->pw_name : "?", host);
+	snprintf(userhosttitle, sizeof(userhosttitle), "%s%s", userhost, userhostsep);
+}
+
+void
 drawbar(Monitor *m)
 {
 	int traywidth = 0;
-	int x, w, tw = 0;
+	int x, w, tw = 0, cw, cx, uw;
 	int boxs = m->drw->font->height / 9;
 	int boxw = m->drw->font->height / 6 + 2;
 	uint32_t i, occ = 0, urg = 0;
@@ -1796,14 +1813,31 @@ drawbar(Monitor *m)
 	x = drwl_text(m->drw, x, 0, w, m->b.height, m->lrpad / 2, m->ltsymbol, 0);
 
 	if ((w = m->b.width - (tw + x + traywidth)) > m->b.height) {
+		if (m == selmon) {
+			const char *uh = c ? userhosttitle : userhost;
+
+			uw = MIN(TEXTW(m, uh) - m->lrpad / 2, w); /* title adds its own left padding */
+			drwl_setscheme(m->drw, colors[SchemeSel]);
+			x = drwl_text(m->drw, x, 0, uw, m->b.height, m->lrpad / 2, uh, 0);
+			w -= uw;
+		}
 		if (c) {
 			drwl_setscheme(m->drw, colors[m == selmon ? SchemeSel : SchemeNorm]);
 			drwl_text(m->drw, x, 0, w, m->b.height, m->lrpad / 2, client_get_title(c), 0);
 			if (c && c->isfloating)
 				drwl_rect(m->drw, x + boxs, boxs, boxw, boxw, 0, 0);
 		} else {
-			drwl_setscheme(m->drw, colors[SchemeNorm]);
+			drwl_setscheme(m->drw, colors[m == selmon ? SchemeSel : SchemeNorm]);
 			drwl_rect(m->drw, x, 0, w, m->b.height, 1, 1);
+		}
+	}
+
+	if (m == selmon && ctext[0]) {
+		cw = TEXTW(m, ctext);
+		cx = (m->b.width - cw) / 2;
+		if (cx >= x && cx + cw <= m->b.width - tw - traywidth) {
+			drwl_setscheme(m->drw, colors[SchemeNorm]);
+			drwl_text(m->drw, cx, 0, cw, m->b.height, m->lrpad / 2, ctext, 0);
 		}
 	}
 
@@ -2937,6 +2971,7 @@ setup(void)
 		sigaction(sig[i], &sa, NULL);
 
 	setusercolors();
+	setupuserhost();
 
 	wlr_log_init(log_level, NULL);
 
@@ -3208,7 +3243,7 @@ startdrag(struct wl_listener *listener, void *data)
 int
 statusin(int fd, unsigned int mask, void *data)
 {
-	char status[256];
+	char status[sizeof(stext)], *sep;
 	ssize_t n;
 
 	if (mask & WL_EVENT_ERROR)
@@ -3223,7 +3258,16 @@ statusin(int fd, unsigned int mask, void *data)
 	status[n] = '\0';
 	status[strcspn(status, "\n")] = '\0';
 
-	strncpy(stext, status, sizeof(stext));
+	/* text before a 0x1f byte is drawn in the middle of the bar (dwmblocks'
+	 * center blocks) */
+	if ((sep = strchr(status, CENTERSEP))) {
+		*sep = '\0';
+		snprintf(ctext, sizeof(ctext), "%s", status);
+		snprintf(stext, sizeof(stext), "%s", sep + 1);
+	} else {
+		ctext[0] = '\0';
+		snprintf(stext, sizeof(stext), "%s", status);
+	}
 	drawbars();
 
 	return 0;
